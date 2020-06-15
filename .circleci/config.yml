@@ -1,52 +1,58 @@
-version: 2.1
-
-orbs:
-  bedrock:
-    executors:
-      php-latest:
-        docker:
-          - image: 'circleci/php:latest'
-      php-73:
-        docker:
-          - image: 'circleci/php:7.3-stretch'
-      php-72:
-        docker:
-          - image: 'circleci/php:7.2-stretch'
-      php-71:
-        docker:
-          - image: 'circleci/php:7.1-stretch'
-    jobs:
-      build-php:
-        parameters:
-          executor:
-            type: executor
-        executor: << parameters.executor >>
-        steps:
-          - run: php -v
-          - checkout
-          - restore_cache:
-              keys:
-                - composer-v1-{{ checksum "composer.lock" }}
-                - composer-v1-
-          - run: composer install -n --prefer-dist
-          - run: composer test
-          - save_cache:
-              key: composer-v1-{{ checksum "composer.lock" }}
-              paths:
-                - vendor
-
-workflows:
+# PHP CircleCI 2.0 configuration file
+#
+# Check https://circleci.com/docs/2.0/language-php/ for more details
+#
+version: 2
+jobs:
   build:
-    jobs:
-      - bedrock/build-php:
-          name: build-php-latest
-          executor: bedrock/php-latest
-      - bedrock/build-php:
-          name: build-php-73
-          executor: bedrock/php-73
-      - bedrock/build-php:
-          name: build-php-72
-          executor: bedrock/php-72
-      - bedrock/build-php:
-          name: build-php-71
-          executor: bedrock/php-71
+    docker:
+      # Specify the version you desire here
+      - image: circleci/php:7.1-node-browsers
+
+      # Specify service dependencies here if necessary
+      # CircleCI maintains a library of pre-built images
+      # documented at https://circleci.com/docs/2.0/circleci-images/
+      # Using the RAM variation mitigates I/O contention
+      # for database intensive operations.
+      # - image: circleci/mysql:5.7-ram
+      #
+      # - image: redis:2.8.19
+
+    steps:
+      - checkout
+
+      - run: sudo apt update # PHP CircleCI 2.0 Configuration File# PHP CircleCI 2.0 Configuration File sudo apt install zlib1g-dev libsqlite3-dev
+      - run: sudo docker-php-ext-install zip
+
+      # Download and cache dependencies
+      - restore_cache:
+          keys:
+            # "composer.lock" can be used if it is committed to the repo
+            - v1-dependencies-{{ checksum "composer.json" }}
+            # fallback to using the latest cache if no exact match is found
+            - v1-dependencies-
+
+      - run: composer install -n --prefer-dist
+
+      - save_cache:
+          key: v1-dependencies-{{ checksum "composer.json" }}
+          paths:
+            - ./vendor
+      - restore_cache:
+          keys:
+            - node-v1-{{ checksum "package.json" }}
+            - node-v1-
+      - run: yarn install
+      - save_cache:
+          key: node-v1-{{ checksum "package.json" }}
+          paths:
+            - node_modules
+
+      # prepare the database
+      - run: touch storage/testing.sqlite
+      - run: php artisan migrate --env=testing --database=sqlite_testing --force
+
+      # run tests with phpunit or codecept
+      #- run: ./vendor/bin/phpunit
+      - run: ./vendor/bin/codecept build
+      - run: ./vendor/bin/codecept run
