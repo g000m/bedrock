@@ -1,3 +1,8 @@
+### HEAD
+* Default to `WP_DEBUG_LOG=true` in development ([#505](https://github.com/roots/bedrock/pull/505))
+* Support `.env.local` config override ([#594](https://github.com/roots/bedrock/pull/594))
+* Use Bedrock disallow indexing package ([#521](https://github.com/roots/bedrock/pull/521))
+
 ### 1.15.4: 2021-05-19
 * Bump roots/wordpress from 5.7 to 5.7.2 ([#593](https://github.com/roots/bedrock/pull/593))
 * Bump composer/installers from 1.10.0 to 1.11.0 ([#592](https://github.com/roots/bedrock/pull/592))
